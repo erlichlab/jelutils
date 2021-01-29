@@ -13,7 +13,8 @@ nanmean(x) = mean(ϕ(x))
 
 binoci(x, α) = begin
     n = length(x)
-    map(z -> invlogcdf(Binomial(n, sum(x)/n), log(z)), [α/2, 1-α/2])./n
+    B = Binomial(n, sum(x)/n)
+    map(z -> invlogcdf(B, log(z)), [α/2, 1-α/2])./n
 end
 binoci(x) = binoci(x, 0.05)
 nanbinoci(x) = binoci(ϕ(x))
@@ -28,22 +29,34 @@ nanzscore(x) = begin
 end
 
 binned(x,y, bins, μ, Ε) = begin
-    @show eltype(x), bins
     h = fit(Histogram, x, bins)
-    @show h
     ox = (bins[1:end-1] + bins[2:end])/2
     xmap = StatsBase.binindex.(Ref(h), x)
     
-    oy = [μ(y[z.==xmap]) for z in 1:maximum(xmap)]
-    oe = [Ε(y[z.==xmap]) for z in 1:maximum(xmap)]
-    (ox, oy, oe)
+    oy = [sum(z.==xmap) > 0 ? μ(y[z.==xmap]) : NaN for z in 1:length(ox)]
+    oe = [sum(z.==xmap) > 0 ? Ε(y[z.==xmap]) : [NaN, NaN] for z in 1:length(ox)]
+    # This returns a long list of 2-tuples, but we want a 2-tuple of vectors
+    (ox, oy, 	(oy .- (x->x[1]).(oe), (x->x[2]).(oe) .- oy))
 end
 binned(x,y, bins) = begin
     if (eltype(y) == Bool) || all(in.(y, Ref([0,1])))
-        @show "bool"
         binned(x,y .+ 0.0,bins, nanmean, nanbinoci)
     else
-        @show "raw"
         binned(x,y,bins, nanmean, nanstderr)
     end
+end
+
+lrt(m1::MixedModel, m2::MixedModel) = begin
+    if dof(m1) > dof(m2)
+        redM = m2; M = m1;
+    elseif dof(m1) < dof(m2)
+        redM = m1; M = m2;
+    else
+        error("Same dof. These are not nested models")
+    end
+    λ = -2(loglikelihood(redM)- loglikelihood(M))
+    Χ=Distributions.Chisq(dof(M) - dof(redM));
+    d = [string(f)=>f(x) for x in [M, redM], f in [loglikelihood, aic, bic, dof]]
+    1 - cdf(Χ, λ)
+    (d, 1 - cdf(Χ, λ))
 end
