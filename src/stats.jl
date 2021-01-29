@@ -1,30 +1,32 @@
 
+ϕ(x) = filter(isfinite, skipmissing(x))
+
 abslog(x) = sign(x)*log(abs(x))
 std(x) = std(x, mean(x))
 std(x,μ) = √sum((x.-μ).^2)
+nanstd(x) = (z -> std(z, mean(z)))(ϕ(x))
 
-nanstd(x) = (z -> std(z, mean(z)))(filter(isfinite, skipmissing(x)))
 stderr(x) = std(x)/√length(x)
-nanstderr(x) = stderr(filter(isfinite, skipmissing(x)))
+nanstderr(x) = stderr(ϕ(x))
 
-nanmean(x) = mean(filter(isfinite, skipmissing(x)))
+nanmean(x) = mean(ϕ(x))
 
 binoci(x, α) = begin
     n = length(x)
     map(z -> invlogcdf(Binomial(n, sum(x)/n), log(z)), [α/2, 1-α/2])./n
 end
-binoci(x) = begin
-    binoci(x, 0.05)
-end
-nanbinoci(x) = binoci(filter(isfinite, skipmissing(x)))
-nanbinoci(x, α) = binoci(filter(isfinite, skipmissing(x)), α)
+binoci(x) = binoci(x, 0.05)
+nanbinoci(x) = binoci(ϕ(x))
+nanbinoci(x, α) = binoci(ϕ(x), α)
+
 nanzscore(x) = begin
     out = copy(x)
-    good = isfinite.(x)
+    good = isfinite.(x) .& .!ismissing.(x)
     xg = x[good]
     out[good] = (xg .- mean(xg)) ./ std(xg)
     out
 end
+
 binned(x,y, bins, μ, Ε) = begin
     @show eltype(x), bins
     h = fit(Histogram, x, bins)
