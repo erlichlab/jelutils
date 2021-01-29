@@ -56,7 +56,9 @@ lrt(m1::MixedModel, m2::MixedModel) = begin
     end
     λ = -2(loglikelihood(redM)- loglikelihood(M))
     Χ=Distributions.Chisq(dof(M) - dof(redM));
-    d = [string(f)=>f(x) for x in [M, redM], f in [loglikelihood, aic, bic, dof]]
+    d = [Symbol(f)=>f(x) for x in [M, redM], f in [loglikelihood, aic, bic, dof]]
     1 - cdf(Χ, λ)
-    (d, 1 - cdf(Χ, λ))
+    df = DataFrame(map(Dict, eachrow(d)))
+    df.p = [1 - cdf(Χ, λ), NaN]
+    df
 end
