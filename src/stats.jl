@@ -28,20 +28,34 @@ nanzscore(x) = begin
     out
 end
 
-binned(x,y, bins, μ, Ε) = begin
+binnedbino(x,y, bins, μ, Ε) = begin
     h = fit(Histogram, x, bins)
+    @show h
     ox = (bins[1:end-1] + bins[2:end])/2
     xmap = StatsBase.binindex.(Ref(h), x)
-    
+    @show xmap
     oy = [sum(z.==xmap) > 0 ? μ(y[z.==xmap]) : NaN for z in 1:length(ox)]
     oe = [sum(z.==xmap) > 0 ? Ε(y[z.==xmap]) : [NaN, NaN] for z in 1:length(ox)]
     # This returns a long list of 2-tuples, but we want a 2-tuple of vectors
     (ox, oy, 	(oy .- (x->x[1]).(oe), (x->x[2]).(oe) .- oy))
 end
+
+binned(x,y, bins, μ, Ε) = begin
+    h = fit(Histogram, x, bins)
+    @show h
+    ox = (bins[1:end-1] + bins[2:end])/2
+    xmap = StatsBase.binindex.(Ref(h), x)
+    @show xmap
+    oy = [sum(z.==xmap) > 0 ? μ(y[z.==xmap]) : NaN for z in 1:length(ox)]
+    oe = [sum(z.==xmap) > 0 ? Ε(y[z.==xmap]) : NaN for z in 1:length(ox)]
+    # This returns a long list of 2-tuples, but we want a 2-tuple of vectors
+    (ox, oy, oe)
+
 binned(x,y, bins) = begin
     if (eltype(y) == Bool) || all(in.(y, Ref([0,1])))
-        binned(x,y .+ 0.0,bins, nanmean, nanbinoci)
+        binnedbino(x,y .+ 0.0,bins, nanmean, nanbinoci)
     else
+        @show "raw"
         binned(x,y,bins, nanmean, nanstderr)
     end
 end
