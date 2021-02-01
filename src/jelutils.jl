@@ -9,6 +9,8 @@ module jelutils
 
 	include("file.jl")
 	include("stats.jl")
+	include("draw.jl")
+	
 	
     
 end # module
