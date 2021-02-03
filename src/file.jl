@@ -1,3 +1,5 @@
+using CSV
+
 git_root() = strip(read(`git rev-parse --show-toplevel`, String))
 git_root(x) = git_root() * x
 read2df(csv) = begin
