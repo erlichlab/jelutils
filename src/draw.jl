@@ -1,4 +1,6 @@
-using Plots, StatsPlots
+using StatsPlots
+using Markdown
+
 draw_histsig(bins, data, is_sig; 
             normalize=false,
             fillcolor=[:white :black],
@@ -19,6 +21,15 @@ draw_histsig(bins, data, is_sig;
         size, legend, guidefontsize, titlefontsize,
         options...
         ) 
+end
 
 
+annotate(p, title="", caption="") = begin
+    md"""
+    ### $title
+
+    $p
+
+    + $caption
+    """
 end
