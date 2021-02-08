@@ -11,6 +11,12 @@ nanstderr(x) = stderr(ϕ(x))
 
 nanmean(x) = mean(ϕ(x))
 
+bootci(x,F;α=0.05, boots=1000) = begin
+    out = map(z->F(rand(z,length(z))), 1:boots)
+    quantile(out, [α/2, 1-α/2])
+
+end
+
 binoci(x, α) = begin
     n = length(x)
     B = Binomial(n, sum(x)/n)
