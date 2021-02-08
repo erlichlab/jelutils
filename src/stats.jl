@@ -12,7 +12,7 @@ nanstderr(x) = stderr(ϕ(x))
 nanmean(x) = mean(ϕ(x))
 
 bootci(x,F;α=0.05, boots=1000) = begin
-    out = map(z->F(rand(z,length(z))), 1:boots)
+    out = map(z->F(rand(x,length(x))), 1:boots)
     quantile(out, [α/2, 1-α/2])
 
 end
@@ -53,8 +53,9 @@ binned(x,y, bins, μ, Ε) = begin
     xmap = StatsBase.binindex.(Ref(h), x)
     #@show xmap
     oy = [sum(z.==xmap) > 0 ? μ(y[z.==xmap]) : NaN for z in 1:length(ox)]
-    oe = [sum(z.==xmap) > 0 ? Ε(y[z.==xmap]) : NaN for z in 1:length(ox)]
-    (ox, oy, oe)
+    oe = [sum(z.==xmap) > 0 ? Ε(y[z.==xmap]) : [NaN, NaN] for z in 1:length(ox)]
+    # This returns a long list of 2-tuples, but we want a 2-tuple of vectors
+    (ox, oy, 	(oy .- (x->x[1]).(oe), (x->x[2]).(oe) .- oy))
 end
 
 binned(x,y, bins) = begin
@@ -62,11 +63,11 @@ binned(x,y, bins) = begin
         binnedbino(x,y .+ 0.0,bins, nanmean, nanbinoci)
     else
         @show "raw"
-        binned(x,y,bins, nanmean, nanstderr)
+        binned(x,y,bins, nanmean, x->(nanmean(x) - nanstderr(x),nanstderr(x)))
     end
 end
 
-lrt(m1::MixedModel, m2::MixedModel) = begin
+lrt(m1, m2) = begin
     if dof(m1) > dof(m2)
         redM = m2; M = m1;
     elseif dof(m1) < dof(m2)
